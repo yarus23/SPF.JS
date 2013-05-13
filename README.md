@@ -6,6 +6,7 @@ Features will include:
 
 - write FORTH system in FORTH itself, not javascript
 - ultra speed near to speed of pure javascript
+- JIT compiler
 - ability to use FORTH code from node.js to write server side FORTH applications
 - web console written in FORTH
 - ability to compile 16-bit version for testing embedded devices
@@ -26,4 +27,4 @@ status:
 Dmitry Yakimov aka (~day)
 write me at yarus23@gmail.com
 
-license if Public domain and apache 2.0 as you wish
+license is Public domain and apache 2.0 as you wish
