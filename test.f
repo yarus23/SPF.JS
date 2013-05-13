@@ -1,0 +1,63 @@
+\\ bla
+
+: t1 1 DUP DROP DROP 0 CHECK-DEPTH ;
+: t2 1 DUP 1 1 2 CHECK-DATA ;
+
+: t3 1 DROP 0 CHECK-DEPTH ;
+
+: t4 1 2 NIP 2 1 CHECK-DATA ;
+: t5 1 2 NIP 1 CHECK-DEPTH ;
+: t6 1 1 NIP DROP 0 CHECK-DEPTH ;
+
+: t7 S" abc" 2DROP 0 CHECK-DEPTH ;
+: t8 ['] t1 DROP 0 CHECK-DEPTH ;
+
+: a1 1 2 3 ;
+: t9 ['] a1 EXECUTE  2DROP DROP 0 CHECK-DEPTH ;
+
+: t10 0 IF 1 ELSE 2 THEN  1 CHECK-DEPTH ;
+: t13 1 IF 1 ELSE 2 THEN 1 1 CHECK-DATA ;
+: t11 0 IF 1 ELSE 2 THEN 2 1 CHECK-DATA ;
+
+: t12 1 1 + 2 1 CHECK-DATA ;
+
+: t14 1 2 SWAP 2 1 2 CHECK-DATA ;
+: t15 0 3 BEGIN SWAP 2 + SWAP 1 - DUP 0 = UNTIL 6 0 2 CHECK-DATA ;
+: t16_ 3 BEGIN 1 + DUP 7 = IF EXIT THEN AGAIN ;
+: t16 t16_ 7 1 CHECK-DATA ;
+
+: t17 0 BEGIN DUP 6 < WHILE 1 + REPEAT 6 1 CHECK-DATA S" t17 OK" TYPE ;
+
+CREATE boom 2 ,
+:  t18 boom @ 2 1 CHECK-DATA S" t18 OK" TYPE ;
+
+: S>D DUP 0 < ;
+
+: M+ ( d1|ud1 n -- d2|ud2 )  S>D D+ ;
+
+: DNEGATE    \ d -- d' \ invert sign of double number
+          INVERT >R INVERT R> 1 M+ ;
+
+: D- DNEGATE D+ ;
+
+
+: t19 -1 -1 1 0 D+ 0 0 2 CHECK-DATA ;
+: t20 -1 -1 1 0  D- -2 -1 2 CHECK-DATA ;
+
+: t21 1000 1000 1003 UM/MOD 198 -12846362 2 CHECK-DATA ;
+: t22 10000 0 3 UM/MOD 1 3333 2 CHECK-DATA ;
+
+: t23 0 5 0 DO 1 + LOOP 5 1 CHECK-DATA ;
+: t24 0 5 0 DO 1 + 1 +LOOP 5 1 CHECK-DATA ;
+: t25 1 0 ?DO 3 LOOP 3 1 CHECK-DATA ;
+: t26 1 1 1 ?DO 3 LOOP 1 1 CHECK-DATA ;
+
+' t16_ SEE
+
+ 
+: test t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18  t19 t20 t21 
+   t22 t23 t24 t25 t26 S" OK" TYPE ;
+
+S" src/spf_forthproc_hl.f" INCLUDE
+
+' test 0 !
