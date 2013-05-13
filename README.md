@@ -25,3 +25,5 @@ status:
 
 Dmitry Yakimov aka (~day)
 write me at yarus23@gmail.com
+
+license if Public domain and apache 2.0 as you wish
