@@ -1214,4 +1214,3 @@ TC('S" test.f" INCLUDE', function(img) {
     var fs = new Forth(img);
     fs.start();
 });
-
