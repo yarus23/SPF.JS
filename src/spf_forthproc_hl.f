@@ -1,12 +1,19 @@
 0 CONSTANT FALSE ( -- false ) \ 94 CORE EXT
 -1 CONSTANT TRUE ( -- true ) \ 94 CORE EXT
 4 CONSTANT CELL
+20 CONSTANT BL
 
 : 0< 0 < ;
 : 1+ 1 + ;
 : 1- 1 - ;
 : ?DUP DUP IF DUP THEN ;
 : UNLOOP R> DROP ;
+: RDROP 2R> NIP >R ;
+: TUCK SWAP OVER ;
+: -ROT ROT ROT ;
+: D0= OR 0= ;
+: SPACE 20 EMIT ;
+: MAX 2DUP > IF DROP ELSE NIP THEN ;
 
 : ?NEGATE   ( n f -- n' )
    0< IF NEGATE THEN 
@@ -15,7 +22,7 @@
 : ABS   ( n -- +n )
           DUP ?NEGATE ;
 
-
+: U>D DUP ;
 : S>D DUP 0< ;
 
 : M+ ( d1|ud1 n -- d2|ud2 )  S>D D+ ;
@@ -143,3 +150,8 @@ DECIMAL
 
 : EOLN ( -- a u ) LT LTL @ ;
 
+: CR EOLN TYPE ;
+
+: COUNT ( c-addr -- addr u )
+    DUP C@ SWAP 1+ SWAP
+; 

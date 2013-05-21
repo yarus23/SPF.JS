@@ -1,5 +1,6 @@
 // todo: variables as lit's
 // todo: const as primitves
+// todo: проверка стека в медленных операциях
 var TC = function(src, callback) {
     
     var parse_count = 0;
@@ -12,7 +13,7 @@ var TC = function(src, callback) {
     var img8 = new Uint8Array(buffer);
     var img16 = new Uint16Array(buffer);
     
-    var dp; // in bytes!!!
+    var dp = 0; // in bytes!!!
     var uri = 'string';
     var immediate_state = true;
     var data_stack = [];
@@ -26,18 +27,28 @@ var TC = function(src, callback) {
     var include_count = 0;
     var tc_vars = {}; // inlining of const and vars
     var radix = 10;
+    var user_dp = 0;
     
+    
+    /* structure of image
+     * 4 - start cfa
+     * 4 - user data length
+     * 4 - exc handler address, shift in user data
+     */
+     
     function write(u) {
         align_cell();
         img[dp / cellSize] = u;
         dp += cellSize;
     }
     write(0); // init cfa
-    dp = 1000; // allocate some mem to future, may be stacks
+    write(0); // user data len
+    write(0); // exc handler
     
     // create forth-wordlist
     write(0); // voc-list
     var forth_wl_last = dp;
+
     write(0); // last-name address
     write(0); // reserved for spf compatibility
     write(0); // reserved for spf compatibility
@@ -51,6 +62,10 @@ var TC = function(src, callback) {
     write(0); // reserved for spf compatibility
     write(0); // reserved for spf compatibility
     write(0); // reserved for spf compatibility	
+	
+	function get_user_dp() {
+		return img[1] = user_dp += cellSize;
+	}
 	
 	function align_addr(addr) {
         if( !(addr % cellSize) ) return addr;
@@ -200,6 +215,8 @@ var TC = function(src, callback) {
     var tc_wordlist_imm = {
 		"HEX": function() { radix = 16 },
 		"DECIMAL": function() { radix = 10 },
+		"TC-USER-ALLOT": function() { user_dp += data_stack.pop(); },
+		"CHARS" : function() { },
 		"SEE": function() {
 			check_stack(1);
 			var word = data_stack.pop();
@@ -227,9 +244,9 @@ var TC = function(src, callback) {
         },
         "USER" :function() {
             create_name(parse());
-            compile_primitive('(DOES1>)');
-            write(0); // for does>
-            write(0);
+            compile_primitive('(USER)');
+            write(get_user_dp()); // shift in user data
+			//compile_primitive('EXIT');
         },
         "CONSTANT": function() {
 			var name = parse();
@@ -254,6 +271,22 @@ var TC = function(src, callback) {
             check_stack(1);
             write(data_stack.pop());
         },
+        "VECT": function() {
+			create_name(parse());
+			compile_primitive('(VECT)');
+			write(data_stack.pop());
+		},
+		"TC-VECT!": function() {
+			check_stack(2);
+			var vect_cfa = data_stack.pop();
+			var exec_cfa = data_stack.pop();
+			img[(vect_cfa + cellSize) >> 2] = exec_cfa;
+			
+		},
+		"SAVE-EXC-HANDLER": function() {
+			check_stack(1);
+			img[2] = img[(data_stack.pop() + cellSize) >> 2];
+		},
         "CREATE": function() {
 			var name = parse();
             create_name(name);
@@ -261,6 +294,12 @@ var TC = function(src, callback) {
             tc_vars[name] = dp;
             write(0); // for does>
         },
+        "USER-CREATE": function() {
+			var name = parse();
+			create_name(name);
+            compile_primitive('(USER)');
+            write(user_dp); // shift in user data
+		},
         ",": function() {
             check_stack(1);
             write_byte(data_stack.pop());
@@ -537,7 +576,16 @@ var TC = function(src, callback) {
         "(LOOP)",
         "(?DO)",
         "*",
-        "/"];
+        "/",
+        "(USER)",
+        "(VECT)",
+        "NOOP",
+        "SP@",
+        "SP!",
+        "RP@",
+        "RP!",
+        "TO-LOG",
+        "U/"];
         
     
     function primitiveIdx(name) { for(var i in primitives) { if( primitives[i] == name) return i}; return undefined };
@@ -597,7 +645,6 @@ var TC = function(src, callback) {
         
     function compile(word) {
         var f;
-        
         if( immediate_state ) f = tc_wordlist_imm[word];
         else
             f = tc_wordlist[word];
@@ -644,12 +691,47 @@ var TC = function(src, callback) {
             }
     };
     
+    
+    function save() {
+		align_cell();
+
+		webkitStorageInfo.requestQuota( 
+			webkitStorageInfo.PERSISTENT,
+
+			dp, // amount of bytes you need
+
+			function(availableBytes) {
+					if( availableBytes == dp )
+						console.log("Quota is available. Image size: " + availableBytes);
+					else throw "cannot save image";
+				}
+			);
+		
+		window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
+		window.requestFileSystem(window.PERSISTENT, 200000, function(fs) {
+				fs.root.getFile('forth.img', {create: true  }, 
+					function(fileEntry) {
+						debugger;
+						fileEntry.createWriter(function(fileWriter) {
+							debugger;
+							var bb = new Blob([img], { type:'application/octet-stream' });
+							bb = bb.slice(0, dp);
+							fileWriter.write(bb, 'application/octet-stream');
+						}, function( e ) { console.log('fileEntry.createWriter error ' + e.code)} );
+
+					}, function( e ) { console.log('fs.root.getFile error ' + e.code)} );
+
+			}, function( e ) { console.log('window.requestFileSystem error ' + e.code)} );
+
+	}
+	
     function interpret() {
         do {
             s = next_word();
             
             if( !s.length ) {
                 if( !include_count ) {
+				   save();
                    if( typeof callback == 'function') callback.call(window, buffer);
 			    }
                 return;
@@ -672,6 +754,7 @@ function Forth(buffer) {
     var dp = 0;
     var low_result;
     var high_result;
+    var dp_start = 0;
     
     function throw_err(err) {
 		throw err;
@@ -681,7 +764,7 @@ function Forth(buffer) {
     }
     
     function check_stack(n) {
-        if( n > dp ) {
+        if( n > (dp - dp_start)) {
             report_error('stack depth error');
 		}
     }
@@ -690,6 +773,7 @@ function Forth(buffer) {
        var length = data_stack[dp--];
        var addr = data_stack[dp--];
        var buf = [];
+
        buf.length = length;
        for(var i = 0; i < length; i++ )
          buf[i] = String.fromCharCode(img8[addr++]);
@@ -804,7 +888,18 @@ function Forth(buffer) {
 		low_result = remainder;
 	}
 	
+	// todo: copy by cell may be faster
+    function sliceImage(buffer, newSize) {
+        var that = new Uint8Array(buffer);
+        var result = new ArrayBuffer(buffer.byteLength > newSize ? buffer.byteLength : newSize);
+        var resultArray = new Uint8Array(result);
+        for (var i = 0; i < resultArray.length; i++)
+           resultArray[i] = that[i];
+        return result;
+    }
+    	
     function inner_loop(){
+		var word = 0;
         do{
             word = img[ip >> 2];
             switch( word ) {
@@ -1000,10 +1095,12 @@ function Forth(buffer) {
                 case 37: // check-depth
                 {
                         check_stack(3);
+
                         var s = get_string();
                         var n = data_stack[dp--];
-                        if( n != dp ) report_error('depth wrong, it is: ' + dp + s);
-                        dp = 0;
+                        var dp2 = dp - dp_start;
+                        if( n != dp2) report_error('depth wrong, it is: ' + dp2 + s);
+                        dp = dp_start;
                         ip += cellSize;
                         break;
                 }
@@ -1016,7 +1113,7 @@ function Forth(buffer) {
                     for(var k = 0; k < i; k++)
                         if( data_stack[dp - k] != data_stack[ dp - k - i] )
                             report_error('data is wrong, it is ' + (k + 1) + ' th element of stack and it is ' + data_stack[ dp - k - i] + s);
-                    dp = 0;
+                    dp = dp_start;
                 }
                 case 39: // swap
                     {
@@ -1095,8 +1192,8 @@ function Forth(buffer) {
 					ip += cellSize;
 					break;
 				case 53: // 2R>
+					udata_stack[dp + 2] = return_stack.pop();
 					udata_stack[dp + 1] = return_stack.pop();
-					udata_stack[dp] = return_stack.pop();
 					dp += 2;
 					ip += cellSize;
 					break;
@@ -1108,8 +1205,8 @@ function Forth(buffer) {
 					break;
 				case 55: // _2R>
 					ip = return_stack.pop();
+					udata_stack[dp + 2] = return_stack.pop();
 					udata_stack[dp + 1] = return_stack.pop();
-					udata_stack[dp] = return_stack.pop();
 					dp += 2;
 					break;
 				case 56: // um/mod
@@ -1177,24 +1274,72 @@ function Forth(buffer) {
 				case 63: // /
 					data_stack[dp-1] = data_stack[d-1] / data_stack[dp];
 					dp--;
-					break;					
+					break;
+				case 64: // (user)
+					data_stack[++dp] = img[(ip + cellSize) >> 2] + user_dp;
+					ip = return_stack.pop();
+					break;
+                case 65: // (vect)
+					ip = img[(ip + cellSize) >> 2];
+					break;
+				case 66: // noop
+					ip += cellSize;
+					break;
+				case 67: // sp@
+				{
+					var sp = dp;
+					data_stack[++dp] = sp;
+					ip += cellSize;
+					break;	
+				}
+				case 68: // sp!
+					dp = data_stack[dp];
+					ip += cellSize;
+					break;
+				case 69: // rp@
+					data_stack[++dp] = return_stack.length;
+					ip += cellSize;
+					break;
+				case 70: // rp!
+					return_stack.length = data_stack[dp--];
+					ip += cellSize;
+					break;
+				case 71: // to-log
+					this.log(get_string());
+					ip += cellSize;
+					break;
+				case 72: // U/
+					udata_stack[dp-1] = udata_stack[d-1] / udata_stack[dp];
+					dp--;
+					break;						
             }
         }while(true);
     }
+
+    img = new Int32Array(buffer);
+    var imageSize = buffer.byteLength;
+
+    var data_stack_size = 2000;
+    var data_space_size = 50000;
+    var user_data_size = img[1] > 30000 ? img[1] : 30000;
     
-   
-    if( typeof img == 'string' ) {
-        // load
-    } else {
-    }
+    buffer = sliceImage(buffer, imageSize
+		+ data_space_size // data
+		+ data_stack_size // data stack
+		+ user_data_size
+	);
+
+   	
     img = new Int32Array(buffer);
     uimg = new Uint32Array(buffer);
     img8 = new Uint8Array(buffer);
-    img16 = new Uint16Array(buffer);        
-
+    img16 = new Uint16Array(buffer);
+    
     data_stack = img;
     udata_stack = uimg;
-    
+    user_dp = imageSize + data_space_size + data_stack_size;
+	dp = dp_start = (imageSize + data_space_size) >> 2;
+   	    
     // get start addr
     var ip = img[0];
     
@@ -1203,8 +1348,11 @@ function Forth(buffer) {
     }
     this.type = function(c) {
         console.log(c);
-    } 
-    // todo: data_stack выделить со смещением и только область
+    }
+    this.log = function(c) {
+		console.log(c);
+	}
+
     this.start = function() {
         inner_loop.call(this);
     }

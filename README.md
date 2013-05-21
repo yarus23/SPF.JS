@@ -23,6 +23,7 @@ status:
 - 20%  ANS 94 wordset
 - 0%   web console
 
+Just run it in browser and look at console.
 
 Dmitry Yakimov aka (~day)
 write me at yarus23@gmail.com

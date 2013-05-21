@@ -52,12 +52,24 @@ CREATE boom 2 ,
 : t25 1 0 ?DO 3 LOOP 3 1 CHECK-DATA ;
 : t26 1 1 1 ?DO 3 LOOP 1 1 CHECK-DATA ;
 
-' t16_ SEE
-
- 
-: test t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18  t19 t20 t21 
-   t22 t23 t24 t25 t26 S" OK" TYPE ;
-
 S" src/spf_forthproc_hl.f" INCLUDE
+S" src/spf_except.f"       INCLUDE
+S" src/spf_print.f"        INCLUDE
+
+: t27_ S" t27 callback" TYPE ;
+: t27 ['] t27_ CATCH 0 1 CHECK-DATA ;
+
+: t28_ -10 THROW ;
+: t28 ['] t28_ CATCH -10 1 CHECK-DATA ;
+
+
+: t29 1 2 3  SP@ SP! 1 2 3 3 CHECK-DATA ;
+: t30 1 RP@ RP! 1 1 CHECK-DATA S" t30 ok" TYPE ;
+: t31 1 1 >R R> DROP 1 1 CHECK-DATA S" t31 ok" TYPE ;
+: t32 1 1 >R RDROP 1 1 CHECK-DATA S" t32 ok" TYPE  ;
+
+: test t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18  t19 t20 t21 
+   t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 S" OK" TYPE ;
+
 
 ' test 0 !
