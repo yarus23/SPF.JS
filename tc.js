@@ -1,6 +1,16 @@
 // todo: variables as lit's
 // todo: const as primitves
 // todo: проверка стека в медленных операциях
+
+
+function ForthError(err, message) {
+	this.err = err;
+	this.message = message;
+}
+
+ForthError.prototype = new Error();
+ForthError.prototype.constructor = ForthError;
+
 var TC = function(src, callback) {
     
     var parse_count = 0;
@@ -131,7 +141,7 @@ var TC = function(src, callback) {
         while(true) {
             var c = src.charCodeAt(parse_count);
             if( c == 8 ) c = 32;
-            if( c == 0x0A ) line_count++;
+            if( c == 0x0A ) { line_count++; /*console.log(line_count)*/ }
             if(  c >= 32 && c != sym.charCodeAt(0) ) {
                 result.push(src.charAt(parse_count));
             } else
@@ -142,7 +152,7 @@ var TC = function(src, callback) {
                         parse_count++;
                         check_eof();
                     }
-                    console.log('parsed \'' + result.join('') + '\'');
+                    //console.log('parsed \'' + result.join('') + '\'');
                     return result.join('');
                 }
             parse_count++;
@@ -283,7 +293,7 @@ var TC = function(src, callback) {
 			img[(vect_cfa + cellSize) >> 2] = exec_cfa;
 			
 		},
-		"SAVE-EXC-HANDLER": function() {
+		"SAVE-EXC-HANDLER": function() { // ( user-var -- )
 			check_stack(1);
 			img[2] = img[(data_stack.pop() + cellSize) >> 2];
 		},
@@ -437,7 +447,7 @@ var TC = function(src, callback) {
             
             if( start.type == '?do' )
 				img[start.addr / cellSize - 1] = dp - start.addr + doubleCell;
-        },         
+        },
         "BEGIN": function() {
             control_stack.push({ addr: dp, type: 'dest'});
         },
@@ -585,7 +595,10 @@ var TC = function(src, callback) {
         "RP@",
         "RP!",
         "TO-LOG",
-        "U/"];
+        "U/",
+        "TIMER@",
+        "..",
+        "FATAL-HANDLER"];
         
     
     function primitiveIdx(name) { for(var i in primitives) { if( primitives[i] == name) return i}; return undefined };
@@ -693,6 +706,7 @@ var TC = function(src, callback) {
     
     
     function save() {
+		return;
 		align_cell();
 
 		webkitStorageInfo.requestQuota( 
@@ -1272,8 +1286,8 @@ function Forth(buffer) {
 					dp--;
 					break;
 				case 63: // /
-					data_stack[dp-1] = data_stack[d-1] / data_stack[dp];
-					dp--;
+					var a = data_stack[dp-1] / data_stack[dp];
+					if( !isFinite(a) ) throw new ForthError(-10, 'division by zero');
 					break;
 				case 64: // (user)
 					data_stack[++dp] = img[(ip + cellSize) >> 2] + user_dp;
@@ -1311,11 +1325,28 @@ function Forth(buffer) {
 				case 72: // U/
 					udata_stack[dp-1] = udata_stack[d-1] / udata_stack[dp];
 					dp--;
-					break;						
+					break;
+				case 73: // TIMER@
+					data_stack[++dp] = Date.now();
+					data_stack[++dp] = 0;
+					ip += cellSize;
+					break;
+				case 74: // (.)
+					var s = 'stack: ';
+					for(var i = dp_start + 1; i <= dp; i++)
+						s += ' ' + data_stack[i];
+					console.log(s);
+					ip += cellSize;
+					break;
+				case 75:
+					this.fatalhandler();
+					ip += cellSize;
+					break;
+				
+					
             }
         }while(true);
     }
-
     img = new Int32Array(buffer);
     var imageSize = buffer.byteLength;
 
@@ -1352,9 +1383,38 @@ function Forth(buffer) {
     this.log = function(c) {
 		console.log(c);
 	}
-
+	
+	this.fatalhandler = function() {
+		
+		throw new ForthError(data_stack[dp], "Unhandheld exception");
+	}
+	
     this.start = function() {
-        inner_loop.call(this);
+		var keep = true;
+		do {
+		try {
+			inner_loop.call(this);
+			keep = false;
+		} catch(e) {
+			var handler = img[(img[2] + user_dp) >> 2];
+			
+			if( e instanceof ForthError )
+				this.log((handler ? 'Forth error: ' : 'Unhandled forth error ') + e.err + ': ' + e.message);
+			else
+				this.log((handler ? 'Forth error: ' : 'Unhandled forth error ') + (e.message ? e.message : e));
+				
+
+			if( handler ) {			 
+				return_stack.length = handler;
+				img[(img[2] + user_dp) >> 2] = return_stack.pop(); // previous handler
+				dp = return_stack.pop();
+				ip = return_stack.pop();
+				data_stack[++dp] = isFinite(e.err) ? e.err : -3000;
+				inner_loop.call(this);
+			} else
+				keep = false;
+		}
+		} while(keep);
     }
 }
 	

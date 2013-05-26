@@ -7,8 +7,8 @@
 : 1+ 1 + ;
 : 1- 1 - ;
 : ?DUP DUP IF DUP THEN ;
-: UNLOOP R> DROP ;
 : RDROP 2R> NIP >R ;
+: UNLOOP R> 2R> DROP DROP >R ;
 : TUCK SWAP OVER ;
 : -ROT ROT ROT ;
 : D0= OR 0= ;

@@ -41,15 +41,16 @@ CREATE boom 2 ,
 : D- DNEGATE D+ ;
 
 
-: t19 -1 -1 1 0 D+ 0 0 2 CHECK-DATA ;
-: t20 -1 -1 1 0  D- -2 -1 2 CHECK-DATA ;
+: t19 -1 -1 1 0 D+ 0 0 2 CHECK-DATA S" t19 OK" TYPE ;
+: t20 -1 -1 1 0  D- -2 -1 2 CHECK-DATA S" t20 OK" TYPE ;
 
-: t21 1000 1000 1003 UM/MOD 198 -12846362 2 CHECK-DATA ;
-: t22 10000 0 3 UM/MOD 1 3333 2 CHECK-DATA ;
+: t21 1000 1000 1003 UM/MOD 198 -12846362 2 CHECK-DATA S" t21 OK" TYPE ;
+: t22 10000 0 3 UM/MOD 1 3333 2 CHECK-DATA S" t22 OK" TYPE ;
 
-: t23 0 5 0 DO 1 + LOOP 5 1 CHECK-DATA ;
-: t24 0 5 0 DO 1 + 1 +LOOP 5 1 CHECK-DATA ;
-: t25 1 0 ?DO 3 LOOP 3 1 CHECK-DATA ;
+: t23 0 5 0 DO 1 + LOOP 5 1 CHECK-DATA S" t23 OK" TYPE ;
+
+: t24 0 5 0 DO 1 + 1 +LOOP 5 1 CHECK-DATA S" t24 OK" TYPE ;
+: t25 1 0 ?DO 3 LOOP 3 1 CHECK-DATA S" t25 OK" TYPE ;
 : t26 1 1 1 ?DO 3 LOOP 1 1 CHECK-DATA ;
 
 S" src/spf_forthproc_hl.f" INCLUDE
@@ -68,8 +69,19 @@ S" src/spf_print.f"        INCLUDE
 : t31 1 1 >R R> DROP 1 1 CHECK-DATA S" t31 ok" TYPE ;
 : t32 1 1 >R RDROP 1 1 CHECK-DATA S" t32 ok" TYPE  ;
 
-: test t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18  t19 t20 t21 
-   t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 S" OK" TYPE ;
+: t33_ 1 0 / S" t33 ok" TYPE ;
+: t33  ['] t33_ CATCH -10 1 CHECK-DATA ;
 
+: t34 1 2 3 ROT 2 3 1 3 CHECK-DATA ;
+: t35 1 2 3 4 2SWAP 3 4 1 2 4 CHECK-DATA ;
+
+: test t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18  t19 t20 t21 
+   t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34 t35 S" OK" TYPE ;
+
+
+: fib-iter ( n -- f )
+  0 1 ROT 0 ?DO OVER + SWAP LOOP DROP ;
+
+: fib TIMER@ 100 fib-iter S" fib done" TYPE TIMER@ 2SWAP D- DROP .. ;
 
 ' test 0 !
