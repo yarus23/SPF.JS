@@ -427,8 +427,6 @@ var TC = function(src, callback) {
             var start = control_stack.pop();
             if( start.type != 'do' && start.type != '?do' ) report_error('loop without do');
             
-			compile_primitive('(LIT)');
-			write(1);
 
             var n = start.addr - dp;
             compile_primitive('(LOOP)');
@@ -442,7 +440,7 @@ var TC = function(src, callback) {
             if( start.type != 'do' && start.type != '?do' ) report_error('loop without do');
             
             var n = start.addr - dp;
-            compile_primitive('(LOOP)');
+            compile_primitive('(+LOOP)');
             write(n); // negative
             
             if( start.type == '?do' )
@@ -598,7 +596,8 @@ var TC = function(src, callback) {
         "U/",
         "TIMER@",
         "..",
-        "FATAL-HANDLER"];
+        "FATAL-HANDLER",
+        "(+LOOP)"];
         
     
     function primitiveIdx(name) { for(var i in primitives) { if( primitives[i] == name) return i}; return undefined };
@@ -654,7 +653,8 @@ var TC = function(src, callback) {
     function next_word() { return parse() };
     function compile_word(cfa) { compile_primitive('(DOCOL)'); write(cfa) };
     
-    function is_literal(word) { if(!isNaN(parseInt(word, radix))) return parseInt(word, radix) };
+    function is_int(val) { var RE = /^-{0,1}(\d|[A-F]|[a-f])*$/; return RE.test(val); }
+    function is_literal(word) { if(is_int(word)) return parseInt(word, radix) };
         
     function compile(word) {
         var f;
@@ -1057,12 +1057,12 @@ function Forth(buffer) {
                     ip += cellSize;
                     break;
                 case 27: // xor
-                    data_stack[dp-1] = udata_stack[dp-1] ^ udata_stack[dp];
+                    data_stack[dp-1] ^= udata_stack[dp];
                     dp--;
                     ip += cellSize;
                     break;
                 case 28: // or
-                    data_stack[dp-1] = udata_stack[dp-1] | udata_stack[dp];
+                    data_stack[dp-1] |= udata_stack[dp];
                     dp--;
                     ip += cellSize;
                     break;
@@ -1247,6 +1247,7 @@ function Forth(buffer) {
 				    udata_stack[dp-1] = (udata_stack[dp-1] < udata_stack[dp]) ? -1 : 0;
                     dp--
                     ip += cellSize;
+                    break;
                 case 59: // cmove>
                 {
                     var u = data_stack[dp--];
@@ -1259,10 +1260,9 @@ function Forth(buffer) {
                 case 60: // (loop)
 					{
 						var i = return_stack.length - 1;
-						return_stack[i] += data_stack[dp--];
+						return_stack[i]++;
 						if( return_stack[i] >= return_stack[i-1] ) {
-							return_stack.pop();
-							return_stack.pop();
+							return_stack.length = i - 1;
 							ip += doubleSize; // leave a cycle
 						} else {
 							ip += img[(ip + cellSize) >> 2];
@@ -1342,7 +1342,19 @@ function Forth(buffer) {
 					this.fatalhandler();
 					ip += cellSize;
 					break;
-				
+                case 76: // (+loop)
+					{
+						var i = return_stack.length - 1;
+						return_stack[i] += data_stack[dp--];
+						if( return_stack[i] >= return_stack[i-1] ) {
+							return_stack.length = i - 1;
+							ip += doubleSize; // leave a cycle
+						} else {
+							ip += img[(ip + cellSize) >> 2];
+						}
+					}
+					
+					break;				
 					
             }
         }while(true);

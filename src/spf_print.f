@@ -57,7 +57,7 @@ USER-CREATE PAD ( -- c-addr ) \ 94 CORE EXT
 ;
 
 : (D.) ( d -- addr len )
-  DUP >R DABS <# #S R> SIGN #>
+  DUP >R DABS  <# #S R> SIGN #>
 ;
 
 : D. ( d -- ) \ 94 DOUBLE

@@ -4,6 +4,7 @@
 20 CONSTANT BL
 
 : 0< 0 < ;
+: 0= 0 = ;
 : 1+ 1 + ;
 : 1- 1 - ;
 : ?DUP DUP IF DUP THEN ;

@@ -75,13 +75,22 @@ S" src/spf_print.f"        INCLUDE
 : t34 1 2 3 ROT 2 3 1 3 CHECK-DATA ;
 : t35 1 2 3 4 2SWAP 3 4 1 2 4 CHECK-DATA ;
 
-: test t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18  t19 t20 t21 
+: POOL-INIT 
+    DECIMAL
+;
+
+: test 
+   POOL-INIT
+   12345 .
+   t1 t2 t3 t4 t5 t6 t7 t8 t9 t10 t11 t12 t13 t14 t15 t16 t17 t18  t19 t20 t21 
    t22 t23 t24 t25 t26 t27 t28 t29 t30 t31 t32 t33 t34 t35 S" OK" TYPE ;
 
 
 : fib-iter ( n -- f )
   0 1 ROT 0 ?DO OVER + SWAP LOOP DROP ;
+\ ' fib-iter SEE
 
-: fib TIMER@ 100 fib-iter S" fib done" TYPE TIMER@ 2SWAP D- DROP .. ;
+
+: fib POOL-INIT 12345 . EXIT S" fib start" TYPE TIMER@ 100000000 fib-iter DROP TIMER@ 2SWAP D- DROP ..  S" fib done" TYPE ;
 
 ' test 0 !
