@@ -32,13 +32,14 @@ var TC = function(src, callback) {
     var last_nfa;
     var forth_voc = dp;
     var control_stack = [];
+    var leave_stack = [];
     var stop_parse;
     var line_count = 0;
     var include_count = 0;
     var tc_vars = {}; // inlining of const and vars
     var radix = 10;
     var user_dp = 0;
-    
+    var test_wl = {}; // map of test words
     
     /* structure of image
      * 4 - start cfa
@@ -223,7 +224,20 @@ var TC = function(src, callback) {
     }
     
     var tc_wordlist_imm = {
+		"CHAR": function() {
+			data_stack.push(parse().charCodeAt(0));
+		},
+		"CR": function() { },
+		"HERE": function() { data_stack.push(dp)}, // todo: давать в целевом!!!
 		"HEX": function() { radix = 16 },
+		"INVERT": function() { data_stack.push(data_stack.pop() ^ 0xFFFFFFFF) },
+		"CELLS": function() { data_stack.push(data_stack.pop() * cellSize) },
+		"ALIGN": function() { align_cell(); },
+		//"ALIGNED": function() { data_stack.push(align_addr(data_stack.pop())) },
+		"RSHIFT": function() { 
+			var shift = data_stack.pop();
+			data_stack.push(data_stack.pop() >>> shift);
+		},
 		"DECIMAL": function() { radix = 10 },
 		"TC-USER-ALLOT": function() { user_dp += data_stack.pop(); },
 		"CHARS" : function() { },
@@ -280,7 +294,14 @@ var TC = function(src, callback) {
             compile_primitive('(VAL)');
             check_stack(1);
             write(data_stack.pop());
+            compile_primitive('(TO-VAL)');
         },
+        "USER-VALUE" : function() {
+			create_name(parse());
+			compile_primitive('(USER-VALUE)');
+            write(get_user_dp()); // shift in user data
+            compile_primitive('(TO-USERVAL)');
+		},
         "VECT": function() {
 			create_name(parse());
 			compile_primitive('(VECT)');
@@ -322,7 +343,7 @@ var TC = function(src, callback) {
             check_stack(1);
             write_word(data_stack.pop());
         },
-        "INCLUDE": function() {
+        "INCLUDED": function() {
             check_stack(2);
             data_stack.pop();
             var uri_ = data_stack.pop();
@@ -388,6 +409,27 @@ var TC = function(src, callback) {
         },
         "IMMEDIATE": function() {
 			img8[last_nfa - 1] = img8[last_nfa - 1] & 1; // set immediate flag 
+		},
+		"T{": function() {
+			var name = 'test' + dp;
+			create_name(name);
+			test_wl[name] = dp;
+			immediate_state = false;
+		},
+		"COMPILE-TESTS": function() {
+			create_name('TESTER');
+			for(var i in test_wl) {
+				compile_primitive('(DOCOL)');
+				write(test_wl[i]);
+			}
+			compile_primitive('EXIT');
+		},
+		"TESTING": function() {
+			var n = parse('\n');
+			console.log('TESTING ' + n);
+		},
+		"FALSE": function() {
+			data_stack.push(0);
 		}
     }
     
@@ -423,6 +465,11 @@ var TC = function(src, callback) {
 			compile_primitive('2>R');
             control_stack.push({ addr: dp, type: 'do'});      
         },
+        "LEAVE": function() {
+			compile_primitive('(LEAVE)');
+			write(0);
+			leave_stack.push({ addr: dp });
+		},
         "LOOP": function() {
             var start = control_stack.pop();
             if( start.type != 'do' && start.type != '?do' ) report_error('loop without do');
@@ -434,17 +481,28 @@ var TC = function(src, callback) {
             
             if( start.type == '?do' )
 				img[start.addr / cellSize - 1] = dp - start.addr + doubleCell;
+				            
+			while(leave_stack.length) {
+				var start = leave_stack.pop();
+				img[start.addr / cellSize - 1] = dp - start.addr + doubleCell;
+			}	            
         },
         "+LOOP": function() {
             var start = control_stack.pop();
             if( start.type != 'do' && start.type != '?do' ) report_error('loop without do');
             
+
             var n = start.addr - dp;
             compile_primitive('(+LOOP)');
             write(n); // negative
             
             if( start.type == '?do' )
 				img[start.addr / cellSize - 1] = dp - start.addr + doubleCell;
+				            
+			while(leave_stack.length) {
+				var start = leave_stack.pop();
+				img[start.addr / cellSize - 1] = dp - start.addr + doubleCell;
+			}	 
         },
         "BEGIN": function() {
             control_stack.push({ addr: dp, type: 'dest'});
@@ -495,15 +553,7 @@ var TC = function(src, callback) {
             write(n);
             
             img[orig.addr >> 2] = dp - orig.addr + cellSize;
-        },
-        "CHECK-DEPTH": function() {
-            compile_sliteral(' at line: ' + (line_count + 1) + ' at uri: ' + uri);
-            compile_primitive('(CHECK-DEPTH)');
-        },
-        "CHECK-DATA": function() {
-            compile_sliteral(' at line: ' + (line_count + 1) + ' at uri: ' + uri);
-            compile_primitive('(CHECK-DATA)');
-        },        
+        },       
         "S\"": function() {
             var s = parse('\"');
             if( s.length )
@@ -518,6 +568,24 @@ var TC = function(src, callback) {
         "\\": function() {
             parse('\n');
         },
+        "}T": function() {
+			compile_sliteral(' at line: ' + (line_count + 1) + ' at uri: ' + uri);
+			compile_primitive('(DOCOL)');
+			var t = get_nfa('}T');
+			if( !t ) report_error("Define }T in FORTH");
+			write(img[(t - cellSize - 1) >> 2]);
+			immediate_state = true;
+			compile_primitive('EXIT');
+		},
+		"TO": function() {
+			var name = parse();
+			var nfa = get_nfa(name);
+			if( !nfa ) report_error("cannot find name");
+			var cfa = img[(nfa - cellSize - 1) >> 2];
+			compile_primitive("(LIT)");
+			write(cfa + cellSize);
+			write(img[(cfa + cellSize * 2) >> 2]);
+		}
     }
     
     var primitives = [
@@ -558,8 +626,8 @@ var TC = function(src, callback) {
         "RSHIFT",
         "LSHIFT",
         "EXECUTE",
-        "(CHECK-DEPTH)",
-        "(CHECK-DATA)",
+        "(USER-VALUE)",
+        "(TO-VAL)",
         "SWAP",
         "=",
         ">",
@@ -597,7 +665,11 @@ var TC = function(src, callback) {
         "TIMER@",
         "..",
         "FATAL-HANDLER",
-        "(+LOOP)"];
+        "(+LOOP)",
+        "2R@",
+        "_2R@",
+        "(LEAVE)",
+        "(TO-USERVAL)"];
         
     
     function primitiveIdx(name) { for(var i in primitives) { if( primitives[i] == name) return i}; return undefined };
@@ -608,7 +680,7 @@ var TC = function(src, callback) {
 		compile_primitive('_R@');
 		
 		create_name('I', compile_wl_last);
-		dst_compile['I'] = dp;
+		dst_compile['I'] = primitiveIdx('R@');
 		compile_primitive('R@');
 		
 		for(var i in primitives) {
@@ -621,11 +693,10 @@ var TC = function(src, callback) {
 				
 				// create word in compile wl
 				create_name(word.slice(1), compile_wl_last);
-				var wdp = dp;
 				compile_primitive(word.slice(1));
 				
 				// add exception
-				dst_compile[word.slice(1)] = wdp;
+				dst_compile[word.slice(1)] = primitiveIdx(word.slice(1));
 			}
 		}
 		
@@ -666,7 +737,7 @@ var TC = function(src, callback) {
         if( f ) { f.call(); return; }
         else {
 			if( dst_compile[word] ) {
-				f = primitiveIdx(word);
+				f = dst_compile[word];
 				write(f);
 				return;
 			}
@@ -873,6 +944,7 @@ function Forth(buffer) {
 	}
 	
 	function udivmod(high, low, u) {
+		// todo: division by zero
 		if( !high ) {
 			high_result = low / u;
 			low_result = low % u;
@@ -1106,28 +1178,18 @@ function Forth(buffer) {
                         return_stack.push(ip + cellSize);
                         ip = udata_stack[dp--];
                         break;
-                case 37: // check-depth
+                case 37: // (USER-VALUE)
                 {
-                        check_stack(3);
-
-                        var s = get_string();
-                        var n = data_stack[dp--];
-                        var dp2 = dp - dp_start;
-                        if( n != dp2) report_error('depth wrong, it is: ' + dp2 + s);
-                        dp = dp_start;
-                        ip += cellSize;
+                        data_stack[++dp] = img[(img[(ip + cellSize) >> 2] + user_dp) >> 2];
+					    ip = return_stack.pop();
                         break;
                 }
-                case 38: // check-data
+                case 38: // to-val ( u addr of val )
                 {
-                    check_stack(5);
-                    var s = get_string();
-                    var i = data_stack[dp--]; // count
-                    check_stack(i * 2);
-                    for(var k = 0; k < i; k++)
-                        if( data_stack[dp - k] != data_stack[ dp - k - i] )
-                            report_error('data is wrong, it is ' + (k + 1) + ' th element of stack and it is ' + data_stack[ dp - k - i] + s);
-                    dp = dp_start;
+						var a = data_stack[dp--];
+						img[a >> 2] = data_stack[dp--];
+                        ip += cellSize;
+                        break;
                 }
                 case 39: // swap
                     {
@@ -1282,12 +1344,14 @@ function Forth(buffer) {
 					dp -= 2;
 					break;
 				case 62: // *
-					data_stack[dp-1] = data_stack[dp-1] * data_stack[dp];
+					data_stack[dp-1] *= data_stack[dp];
 					dp--;
+					ip += cellSize;
 					break;
 				case 63: // /
 					var a = data_stack[dp-1] / data_stack[dp];
 					if( !isFinite(a) ) throw new ForthError(-10, 'division by zero');
+					ip += cellSize;
 					break;
 				case 64: // (user)
 					data_stack[++dp] = img[(ip + cellSize) >> 2] + user_dp;
@@ -1354,8 +1418,31 @@ function Forth(buffer) {
 						}
 					}
 					
-					break;				
-					
+					break;
+				case 77: // 2R@
+				// todo: ошибки массивов читать Error message
+					var a = return_stack.length - 1;
+					data_stack[++dp] = return_stack[a - 1];
+					data_stack[++dp] = return_stack[a];
+					ip += cellSize;
+					break;
+				case 78: // _2R@
+					var a = return_stack.length - 2;
+					data_stack[++dp] = return_stack[a - 1];
+					data_stack[++dp] = return_stack[a];
+					ip += cellSize;
+					break;
+				case 79: // (leave)
+					return_stack.length = return_stack.length - 2;
+					ip += img[(ip + cellSize) >> 2];
+					break;
+				case 80: // (TO-USERVAL)
+					{
+						var a = data_stack[dp--];
+						img[(a + user_dp) >> 2] = data_stack[dp--];
+						ip += cellSize;
+						break;
+					}
             }
         }while(true);
     }
@@ -1430,7 +1517,7 @@ function Forth(buffer) {
     }
 }
 	
-TC('S" test.f" INCLUDE', function(img) {
+TC('S" test.f" INCLUDED', function(img) {
     var fs = new Forth(img);
     fs.start();
 });

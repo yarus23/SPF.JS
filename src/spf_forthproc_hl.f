@@ -7,6 +7,16 @@
 : 0= 0 = ;
 : 1+ 1 + ;
 : 1- 1 - ;
+: 2* 1 LSHIFT ;
+: 2/ 1 RSHIFT ;
+: CELL+ CELL + ;
+: 2@ ( addr -- n1 n2 ) DUP CELL+ @ SWAP @ ;
+: 2! DUP ROT SWAP ! ! ;
+: +! ( n addr ) DUP @ ROT + SWAP ! ;
+: 0! 0 SWAP 1 ;
+: 1+! DUP @ 1 + SWAP ! ;
+: <> = 0= ;
+
 : ?DUP DUP IF DUP THEN ;
 : RDROP 2R> NIP >R ;
 : UNLOOP R> 2R> DROP DROP >R ;
@@ -15,6 +25,8 @@
 : D0= OR 0= ;
 : SPACE 20 EMIT ;
 : MAX 2DUP > IF DROP ELSE NIP THEN ;
+: MIN 2DUP < IF DROP ELSE NIP THEN ;
+: 2OVER 2>R 2DUP 2R> 2SWAP ;
 
 : ?NEGATE   ( n f -- n' )
    0< IF NEGATE THEN 
@@ -130,7 +142,7 @@
    2166136261 2SWAP
    OVER + SWAP 
    ?DO
-      16777619 * I C@ XOR
+      16777619 *  .. I C@ XOR
    LOOP
    SWAP ?DUP IF UMOD THEN   
 ;
@@ -156,3 +168,12 @@ DECIMAL
 : COUNT ( c-addr -- addr u )
     DUP C@ SWAP 1+ SWAP
 ; 
+
+USER ALIGN-BYTES
+: ALIGN-TO ( addr u -- addr1 )
+    2DUP MOD DUP IF - + ELSE 2DROP THEN
+;
+DECIMAL
+: ALIGNED ( addr -- a-addr ) \ 94
+  ALIGN-BYTES @ ALIGN-TO
+;
