@@ -27,10 +27,6 @@ USER-CREATE PAD ( -- c-addr ) \ 94 CORE EXT
   DUP HLD ! C!
 ;
 
-: HOLDS ( addr u -- ) \ from eserv src
-  TUCK CHARS + SWAP 0 ?DO DUP I CHARS - CHAR- C@ HOLD ( /CHAR +LOOP FIXME) LOOP DROP
-;
-
 : <# ( -- ) \ 94
   PAD CHAR- HLD !
   0 PAD CHAR- C!
@@ -72,6 +68,18 @@ USER-CREATE PAD ( -- c-addr ) \ 94 CORE EXT
   U>D D.
 ;
 
+: D.R ( d n -- )
+  >R (D.) R> OVER -
+  DUP 0 > IF SPACES TYPE
+          ELSE DROP TYPE
+          THEN
+;
+
+: HOLDS ( addr u -- ) \ from eserv src
+  TUCK CHARS + SWAP 0 ?DO DUP I CHARS - CHAR- C@ HOLD ( /CHAR +LOOP FIXME) LOOP  DROP
+;
+
+
 : .0
   >R 0 <# #S #> R> OVER - 0 MAX DUP 
     IF 0 DO [CHAR] 0 EMIT LOOP
@@ -90,7 +98,7 @@ USER-CREATE PAD ( -- c-addr ) \ 94 CORE EXT
   0 DO DUP C@ >PRT EMIT 1+ LOOP DROP
 ;
 
-: DUMP ( addr u -- ) \ 94 TOOLS
+: DUMP1 ( addr u -- ) \ 94 TOOLS
   DUP 0= IF 2DROP EXIT THEN
   BASE @ >R HEX
   15 + 16 U/ 0 DO
@@ -99,8 +107,10 @@ USER-CREATE PAD ( -- c-addr ) \ 94 CORE EXT
       DO I 4 MOD 0= IF SPACE THEN
         DUP C@ 2 .0 SPACE 1+
       LOOP SWAP 16  PTYPE
-  LOOP DROP R> BASE !
+  LOOP DROP R> BASE ! CR
 ;
+
+' DUMP1 ' DUMP TC-VECT!
 
 : (.") ( T -> )
   COUNT TYPE

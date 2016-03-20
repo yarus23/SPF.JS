@@ -3,6 +3,7 @@
 USER HANDLER
 ' HANDLER SAVE-EXC-HANDLER
 
+VECT FATAL-HANDLER
 
 : THROW ( k*x n -- k*x | i*x n ) \ 94 EXCEPTION
   DUP 0= IF DROP EXIT THEN
@@ -28,3 +29,4 @@ USER HANDLER
   ( i*x -- ) ( R: j*x -- )
   -1 THROW
 ;
+

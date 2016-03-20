@@ -19,11 +19,12 @@ Features will include:
 status:
 
 - 100% virtual machine
-- 90%  target compiler
-- 20%  ANS 94 wordset
-- 0%   web console
+- 100%  target compiler
+- 100%  ANS 94 wordset
+- 50%   web console
 
-Just run it in browser and look at console.
+Just run a http server (for Windows I recommend miniweb) , point it to htdocs directory and load it in browser and look at console.
+Or start local FORTH system with help of node.js
 
 Dmitry Yakimov aka (~day)
 write me at yarus23@gmail.com
