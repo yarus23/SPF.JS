@@ -1155,7 +1155,7 @@ var TC = function(src, callback) {
 
 
 
-TC('S" ./test.f" INCLUDED');
+TC('S" ./spf_init.f" INCLUDED');
 //, function(img) {
 //    var fs = new Forth(img, {
 //        data_space_size: 1000000

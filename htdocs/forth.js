@@ -914,13 +914,6 @@ function Forth(buffer, config) {
 
     }
 
-    function timer() {
-        data_stack[++dp] = Date.now();
-        data_stack[++dp] = 0;
-        ip += cellSize;
-
-    }
-
     function dot() {
         var s = 'stack: ';
         for (var i = dp_start + 1; i <= dp; i++)
