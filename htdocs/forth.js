@@ -1568,7 +1568,7 @@ function Forth(buffer, config) {
 
                 if (e instanceof ForthError) {
                     this.log((handler ? 'Forth error: ' : 'Unhandled forth error ') + e.err + ': ' + e.message);
-                    if( e.err == -400 ) { alert("Unrecoverable error. Unknown opcode. Exiting..."); return };
+                    if( e.err == -400 ) { throw "Unrecoverable error. Unknown opcode. Exiting..."; };
                 }
                 else
                     this.log((handler ? 'JS error: ' : 'Unhandled forth error ') + (e.message ? e.message : e));
