@@ -33,6 +33,7 @@ function Forth(buffer, config) {
     var magic_alloc = 0xBADF00D;
 
     this.global = {};
+    if( !this.jsdict ) this.jsdict = {};
 
     // for SAVE
     this.global.img8 = img8;
@@ -1623,7 +1624,6 @@ Forth.prototype.log = function(c) {
 }
 
 Forth.prototype.addJSDict = function(dict) {
-   if( !this.jsdict ) this.jsdict = {};
    var name  = /^function\s+([\w\$]+)\s*\(/.exec( dict.toString() )[ 1 ];
    this.jsdict[name] = new dict(this.global);
 }
