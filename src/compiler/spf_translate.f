@@ -111,6 +111,17 @@ JS: HALT
  ELSE RDROP RDROP THEN
 ;
 
+\ Execute javascript methods like JSObj.method
+: NOTFOUND ( a u -- )
+    2DUP S" ." SEARCH
+    IF
+       >R OVER R@ = IF R> 2DROP NOTFOUND THEN
+       SWAP R@ - SWAP R> 1- SWAP 1+ SWAP
+       EXECUTE-JS-WORD-FROM-DICT THROW
+    ELSE 2DROP NOTFOUND
+    THEN
+;
+
 : INTERPRET ( -> ) \ интерпретировать входной поток
   BEGIN
     PARSE-NAME DUP

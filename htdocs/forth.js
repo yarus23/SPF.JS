@@ -1128,6 +1128,26 @@ function Forth(buffer, config) {
         } else throw new ForthError(-11, "Unknown javascript word: " + str);
     }
 
+    function jscolon_dict(me) {
+
+        var second = me.global.get_string();
+        var first = me.global.get_string();
+
+        var f = me.jsdict[first];
+        if( f ) {
+            var method = f[second];
+            if( method ) { 
+              var r = method.call(f, me.global, data_stack, return_stack, function() { me.start() }); 
+              me.global.push(0);
+              ip += cellSize;
+              return r;
+            }
+
+        }
+        ip += cellSize;
+        me.global.push(-2003);
+    }
+
     function get_cache_name(global) { // ( wid addr u -- nfa | 0 )
         var str = global.get_string();
         var wid = global.pop();
@@ -1512,6 +1532,9 @@ function Forth(buffer, config) {
                     this.global.namecache = undefined;
                     ip += cellSize;
                     break;
+                case 101: // EXECUTE-JS-WORD-FROM-DICT
+                    if( jscolon_dict(this)) return;                    
+                    break;               
                 default:
                     //report_error("unknown opcode " + word);
                     throw new ForthError(-400, "Uknown opcode");
@@ -1597,6 +1620,12 @@ Forth.prototype.addWords = function(words) {
 
 Forth.prototype.log = function(c) {
    console.log(c);
+}
+
+Forth.prototype.addJSDict = function(dict) {
+   if( !this.jsdict ) this.jsdict = {};
+   var name  = /^function\s+([\w\$]+)\s*\(/.exec( dict.toString() )[ 1 ];
+   this.jsdict[name] = new dict(this.global);
 }
 
 if( typeof module !== 'undefined'  && module.exports )

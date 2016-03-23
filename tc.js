@@ -954,7 +954,8 @@ var TC = function(src, callback) {
         "PRINT-HEAP", // 98
         "CACHE-NAME", // 99
         "GET-CACHE-NAME", // 100
-        "CLEAR-CACHE-NAME"
+        "CLEAR-CACHE-NAME",
+        "EXECUTE-JS-WORD-FROM-DICT"
     ];
 
 
