@@ -17,6 +17,7 @@ S" src/spf_con_io.f"       INCLUDED
 
 S" src/spf_print.f"        INCLUDED
 S" src/spf_module.f"       INCLUDED
+S" src/spf_js_bridge.f"       INCLUDED
 S" src/compiler/spf_parser.f"        INCLUDED
 
 S" src/compiler/spf_read_source.f"   INCLUDED
@@ -99,13 +100,6 @@ CREATE ACTUAL-RESULTS 80 ALLOT
 
 : EMPTY-STACK S0 @ SP! ;
 
-: ERROR		\ ( C-ADDR U c-addr u -- ) DISPLAY AN ERROR MESSAGE FOLLOWED BY
-		\ THE LINE THAT HAD THE ERROR.
-   2SWAP
-   TYPE TYPE CR			\ DISPLAY LINE CORRESPONDING TO ERROR
-   EMPTY-STACK				\ THROW AWAY EVERY THING ELSE
-;
-
 DECIMAL
 
 : PLATFORM ( -- a u ) S" WEB" ;
@@ -117,7 +111,18 @@ DECIMAL
   ." Adapted to JS by Dmitry Yakimov; yarus23@gmail.com" CR
 ;
 
-: INIT POOL-INIT (TITLE) <MAIN> ;; \ S" main.spf" INCLUDED ;;
+: (OPTIONS) ( -- )
+  ['] INTERPRET CATCH PROCESS-ERR THROW
+;
+
+JS: COMMANDLINE-OPTIONS
+
+: OPTIONS ( -> ) \ interpret command line
+   COMMANDLINE-OPTIONS ['] (OPTIONS) EVALUATE-WITH
+;
+
+: INIT POOL-INIT (TITLE) ['] OPTIONS CATCH ERROR <MAIN> ;; \ S" main.spf" INCLUDED ;;
+
 0 VALUE IMAGE-BASE
 
 TC-VOC-LIST _VOC-LIST !

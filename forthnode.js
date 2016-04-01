@@ -2,6 +2,7 @@ var spf = require('./htdocs/forth.js');
 var fs = require('fs');
 var path = require('path');
 
+
 var words = [{
     name: "OPEN-FILE",
     fn: function(global, data_stack, return_stack, callback) {
@@ -241,6 +242,20 @@ var words = [{
     in : 1,
     out: 1
 }, {
+    name: "COMMANDLINE-OPTIONS",
+    fn: function(global) {
+        var arg = "";
+        var i = 0;
+        process.argv.forEach((val, index, array) => {
+           if( i++ > 1 )
+              arg += val + ' ';
+        });
+        global.alloc_string(arg);
+    }, 
+    in: 0,
+    out: 2
+},
+{
     name: "TYPE",
     fn: function(global, data_stack, return_stack, callback) {
 

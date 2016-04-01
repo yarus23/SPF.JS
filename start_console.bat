@@ -1,1 +1,1 @@
-node forthnode.js
+node forthnode.js %1

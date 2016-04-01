@@ -32,7 +32,6 @@
   GET-CURRENT IS-TEMP-WORDLIST
 ;
 : DP ( -- addr ) \ переменная, содержащая HERE сегмента данных
-  (DP) EXIT
   IS-TEMP-WL
   IF GET-CURRENT 7 CELLS + ELSE (DP) THEN
 ;

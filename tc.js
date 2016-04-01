@@ -955,7 +955,15 @@ var TC = function(src, callback) {
         "CACHE-NAME", // 99
         "GET-CACHE-NAME", // 100
         "CLEAR-CACHE-NAME",
-        "EXECUTE-JS-WORD-FROM-DICT"
+        "EXECUTE-JS-WORD-FROM-DICT",
+        "JDROP",
+        "JPICK",
+        "JROLL",
+        "D>J",
+        "J>D",
+        "JDEPTH",
+        "JEVAL",
+        "JFETCH"
     ];
 
 

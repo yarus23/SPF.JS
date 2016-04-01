@@ -19,7 +19,7 @@ status:
 - 90%   web console
 
 For WEB:
-Just run a http server (for Windows I recommend miniweb) , point it to htdocs directory and load it in browser and look at console.
+Just run a http server (you can use simple node.js server via start_server.bat) and load it in browser and look at console.
 Or start local FORTH system with help of node.js
 
 For NODE.JS

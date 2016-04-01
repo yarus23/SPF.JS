@@ -31,6 +31,7 @@ function Forth(buffer, config) {
     var alloc_last_search = 0;
     var magic_free = 0xC0FFEE;
     var magic_alloc = 0xBADF00D;
+    var jstack = []; // stack for JS objects
 
     this.global = {};
     if( !this.jsdict ) this.jsdict = {};
@@ -63,6 +64,16 @@ function Forth(buffer, config) {
     this.global.get8 = function(a) {
         return img8[a]
     };
+
+    this.global.alloc_string = function(s) {
+        var here = alloc(s.size + cellSize);
+        for (var i = 0; i < s.length; i++) {
+           img8[here + i + cellSize] =  s.charCodeAt(i);
+        }
+
+        data_stack[++dp] = here + cellSize;
+        data_stack[++dp] = s.length;
+    }
 
     this.jswords = [];
 
@@ -1137,8 +1148,10 @@ function Forth(buffer, config) {
         var f = me.jsdict[first];
         if( f ) {
             var method = f[second];
+            if( !method && f["notfound"]) method = f["notfound"];
+
             if( method ) { 
-              var r = method.call(f, me.global, data_stack, return_stack, function() { me.start() }); 
+              var r = method.call(f, me.global, data_stack, return_stack, function() { me.start() }, second); 
               me.global.push(0);
               ip += cellSize;
               return r;
@@ -1174,6 +1187,52 @@ function Forth(buffer, config) {
         var existing = global.namecache[wid][name];
         if( !existing || existing < nfa ) global.namecache[wid][name] = nfa;
     }
+
+    function js2f() {
+       data_stack[++dp] = jstack.pop();
+       ip += cellSize;
+    }
+
+    function f2js() {
+       jstack.push(data_stack[dp--]);
+       ip += cellSize;
+    }
+
+    function s2j() {
+       jstack.push(get_string());
+    }
+
+    function isFunction(object) {
+       return !!(object && object.constructor && object.call && object.apply);
+    }
+
+    function jfetch() {
+        var str = get_string();
+        var v = jstack.pop();
+        if( isFunction(v) ) {
+          jstack.push(v.apply(jstack.slice(0).reverse()));
+        }
+        else
+          jstack.push(v[str]);
+        ip += cellSize;
+    }
+
+    function jseval() {
+        var str = get_string();
+        var f = new Function('s', 'return ' + str);
+        jstack.push(f.call(this, jstack));
+        ip += cellSize;
+    }
+
+    function jsdrop() { jstack.pop(); ip += cellSize; }
+    function jspick() { jstack.push(jstack[jstack.length - data_stack[dp--] - 1]); ip += cellSize; }
+    function jsroll() { 
+       var l = data_stack[dp];
+       jspick();
+       jstack.splice(jstack.length - l - 2, 1);
+    }
+    
+    function jdepth() { data_stack[++dp] = jstack.length; ip += cellSize; }
 
     function inner_loop() {
         var word = 0;
@@ -1536,6 +1595,30 @@ function Forth(buffer, config) {
                 case 101: // EXECUTE-JS-WORD-FROM-DICT
                     if( jscolon_dict(this)) return;                    
                     break;               
+                case 102: 
+                    jsdrop();
+                    break;
+                case 103:
+                    jspick();
+                    break;
+                case 104:
+                    jsroll();
+                    break;
+                case 105:
+                    f2js();
+                    break;
+                case 106:
+                    js2f();
+                    break;
+                case 107:
+                    jdepth();
+                    break;
+                case 108:
+                    jseval.apply(this);
+                    break;
+                case 109:
+                    jfetch();
+                    break;
                 default:
                     //report_error("unknown opcode " + word);
                     throw new ForthError(-400, "Uknown opcode");
@@ -1577,7 +1660,7 @@ function Forth(buffer, config) {
     var rp_top = rp;
 
     // get start addr
-    var ip = img[0];
+    var ip = img[0] | 0;
 
     init_heap();
 

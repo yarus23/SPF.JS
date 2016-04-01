@@ -201,6 +201,15 @@ var words = [{
     out: 0
 },
 {
+    name: "COMMANDLINE-OPTIONS",
+    fn: function(global) {
+        var arg = "";
+        global.alloc_string(arg);
+    }, 
+    in: 0,
+    out: 2
+},
+{
     name: "TYPE",
     fn: function(global, data_stack, return_stack, callback) {
 
