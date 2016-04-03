@@ -11,7 +11,7 @@
    BEGIN
      DUP 0 > SWAP 1- SWAP
    WHILE
-     DUP JPICK J>D .
+     DUP JPICK S" console.log(stack[stack.length-1])" JEVAL JDROP JDROP
    REPEAT DROP
 ;
 

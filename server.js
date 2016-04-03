@@ -54,7 +54,7 @@ http.createServer(function (request, response) {
             //If there was an error trying to read the file
             if (err) {
                 //Put the error in the browser
-                response.writeHead(500, {"Content-Type": "text/plain"});
+                response.writeHead(500, {"Content-Type": "text/plain", 'Cache-Control': 'no-cache, private, no-store, must-revalidate'});
                 response.write(err + "\n");
                 response.end();
                 return;

@@ -17,6 +17,7 @@ function StartForth(img_name) {
         console.log('FORTH image loaded');
         fs.addWords(words);
         fs.addJSDict(Dom);
+        fs.addJSDict(Canvas);
         fs.global.open_files = {};
         fs.global.open_files_count = 0;
         fs.start();       
@@ -44,7 +45,7 @@ var words = [{
         name: "OPEN-FILE", // ( c-addr u fam -- fileid ior ) \ 94 FILE
         fn: function(global, data_stack, return_stack, callback) {
             global.pop();
-            var file = global.get_string();
+            var file = global.get_string() + "?" + Date.now();
             var xhr = new XMLHttpRequest();
             xhr.open('GET', file, true);
             xhr.responseType = 'arraybuffer';

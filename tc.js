@@ -963,7 +963,8 @@ var TC = function(src, callback) {
         "J>D",
         "JDEPTH",
         "JEVAL",
-        "JFETCH"
+        "JFETCH",
+        "CHECK-JS-DICT"
     ];
 
 

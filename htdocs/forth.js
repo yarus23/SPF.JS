@@ -1140,6 +1140,14 @@ function Forth(buffer, config) {
         } else throw new ForthError(-11, "Unknown javascript word: " + str);
     }
 
+    function jscolon_checkdict(me) {
+        var first = get_string();
+        var f = me.jsdict[first];
+        if( f ) data_stack[++dp] = -1;
+        else data_stack[++dp] = 0;
+        ip += cellSize;
+    }
+
     function jscolon_dict(me) {
 
         var second = me.global.get_string();
@@ -1151,7 +1159,7 @@ function Forth(buffer, config) {
             if( !method && f["notfound"]) method = f["notfound"];
 
             if( method ) { 
-              var r = method.call(f, me.global, data_stack, return_stack, function() { me.start() }, second); 
+              var r = method.call(f, jstack, me.global, data_stack, return_stack, function() { me.start() }, second); 
               me.global.push(0);
               ip += cellSize;
               return r;
@@ -1209,8 +1217,11 @@ function Forth(buffer, config) {
     function jfetch() {
         var str = get_string();
         var v = jstack.pop();
-        if( isFunction(v) ) {
-          jstack.push(v.apply(jstack.slice(0).reverse()));
+        if( isFunction(v[str]) ) {
+          var f = v[str];
+          var args = jstack.slice(jstack.length - f.length, jstack.length);
+          jstack = jstack.slice(0, jstack.length - f.length);
+          jstack.push(f.apply(v, args));
         }
         else
           jstack.push(v[str]);
@@ -1219,8 +1230,8 @@ function Forth(buffer, config) {
 
     function jseval() {
         var str = get_string();
-        var f = new Function('s', 'return ' + str);
-        jstack.push(f.call(this, jstack));
+        var f = function(stack, str) { return eval(str); };
+        jstack.push(f.call(this, jstack, str));
         ip += cellSize;
     }
 
@@ -1618,6 +1629,9 @@ function Forth(buffer, config) {
                     break;
                 case 109:
                     jfetch();
+                    break;
+                case 110:
+                    jscolon_checkdict(this);
                     break;
                 default:
                     //report_error("unknown opcode " + word);

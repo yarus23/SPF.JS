@@ -1,0 +1,5 @@
+#canvas {
+    width: 300px; /* textarea need to have width or it will not work on Android */
+    height: 300px;
+    background-color:black;
+}
