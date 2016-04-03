@@ -964,7 +964,9 @@ var TC = function(src, callback) {
         "JDEPTH",
         "JEVAL",
         "JFETCH",
-        "CHECK-JS-DICT"
+        "CHECK-JS-DICT",
+        "JSVAL-FETCH",
+        "TOJS-VAL"
     ];
 
 

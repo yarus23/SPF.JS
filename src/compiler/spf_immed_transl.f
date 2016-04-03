@@ -21,7 +21,7 @@
 \ Примечание: Неопределенная ситуация возникает, если POSTPONE или [COMPILE]
 \ применяются к TO.
   ' DUP CELL+ ( addr ) SWAP
-  CELL+ CELL+ @ ( cfa of to )
+  CELL+ CELL+ @ ( v addr cfa of to )
   STATE @
   IF SWAP LIT, 0 , , ELSE EXECUTE THEN
 ; IMMEDIATE

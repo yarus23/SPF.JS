@@ -32,6 +32,7 @@ function Forth(buffer, config) {
     var magic_free = 0xC0FFEE;
     var magic_alloc = 0xBADF00D;
     var jstack = []; // stack for JS objects
+    var jvars = []; // JVALUE array
 
     this.global = {};
     if( !this.jsdict ) this.jsdict = {};
@@ -1245,6 +1246,19 @@ function Forth(buffer, config) {
     
     function jdepth() { data_stack[++dp] = jstack.length; ip += cellSize; }
 
+    function jsval_fetch() {
+        jstack.push(jvars[ img[(ip + cellSize) >> 2] ]);
+        ip = return_stack[rp++];
+    }
+
+    function tojs_val() {
+        var a = data_stack[dp--];
+        var v = img[a >> 2];
+        if( v >= jvars.length ) jvars.push(0);
+        jvars[ v ] = jstack.pop();
+        ip += cellSize;    
+    }
+
     function inner_loop() {
         var word = 0;
         do {
@@ -1632,6 +1646,12 @@ function Forth(buffer, config) {
                     break;
                 case 110:
                     jscolon_checkdict(this);
+                    break;
+                case 111:
+                    jsval_fetch();
+                    break;
+                case 112:
+                    tojs_val();
                     break;
                 default:
                     //report_error("unknown opcode " + word);

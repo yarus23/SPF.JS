@@ -15,3 +15,18 @@
    REPEAT DROP
 ;
 
+VARIABLE JVAR_COUNT
+
+: JVALUE
+   HEADER
+   [ ' JSVAL-FETCH LIT, ] ,
+   HERE
+   JVAR_COUNT @ ,
+   JVAR_COUNT 1+!
+   TOJS-VAL \ init
+   [ C' TOJS-VAL LIT, ] ,   
+;
+
+: NULL 
+    S" null"  JEVAL
+;

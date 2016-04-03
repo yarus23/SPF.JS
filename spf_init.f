@@ -17,7 +17,6 @@ S" src/spf_con_io.f"       INCLUDED
 
 S" src/spf_print.f"        INCLUDED
 S" src/spf_module.f"       INCLUDED
-S" src/spf_js_bridge.f"       INCLUDED
 S" src/compiler/spf_parser.f"        INCLUDED
 
 S" src/compiler/spf_read_source.f"   INCLUDED
@@ -38,6 +37,8 @@ S" src/compiler/spf_immed_lit.f" INCLUDED
 S" src/compiler/spf_immed_transl.f" INCLUDED
 S" src/compiler/spf_literal.f" INCLUDED
 S" src/compiler/spf_words.f" INCLUDED
+
+S" src/spf_js_bridge.f"       INCLUDED
 
 : SAVE ( addr u )
   R/W CREATE-FILE THROW >R
