@@ -17,7 +17,6 @@ function StartForth(img_name) {
         console.log('FORTH image loaded');
         fs.addWords(words);
         fs.addJSDict(Dom);
-        fs.addJSDict(Canvas);
         fs.global.open_files = {};
         fs.global.open_files_count = 0;
         fs.start();       

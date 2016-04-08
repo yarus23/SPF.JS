@@ -1215,14 +1215,24 @@ function Forth(buffer, config) {
        return !!(object && object.constructor && object.call && object.apply);
     }
 
+    function reverse(array) {
+        var left = null;
+        var right = null;
+        for (left = 0, right = length - 1; left < right; left += 1, right -= 1)
+        {
+            var temporary = array[left];
+            array[left] = array[right];
+            array[right] = temporary;
+        }
+        return array;
+    }
+
     function jfetch() {
         var str = get_string();
         var v = jstack.pop();
-        if( isFunction(v[str]) ) {
-          var f = v[str];
-          var args = jstack.slice(jstack.length - f.length, jstack.length);
-          jstack = jstack.slice(0, jstack.length - f.length);
-          jstack.push(f.apply(v, args));
+        var f = v[str];
+        if( isFunction(f) ) {
+          jstack.push(f.apply(v, reverse(jstack.slice(0))));
         }
         else
           jstack.push(v[str]);
