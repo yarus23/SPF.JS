@@ -438,6 +438,8 @@ var TC = function(src, callback) {
             create_name(parse_word());
             compile_primitive('(VECT)');
             write(0);
+            var tovcfa = find("TOVAL-CODE");
+            write(tovcfa);
         },
         "TC-VECT!": function() {
             check_stack(2);
@@ -966,7 +968,9 @@ var TC = function(src, callback) {
         "JFETCH",
         "CHECK-JS-DICT",
         "JSVAL-FETCH",
-        "TOJS-VAL"
+        "TOJS-VAL",
+        "JS-READ-LINE",
+        "SERVER?" // TRUE if in server mode - no console, command line and input from js_input
     ];
 
 

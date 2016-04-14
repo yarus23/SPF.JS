@@ -33,12 +33,14 @@ function Forth(buffer, config) {
     var magic_alloc = 0xBADF00D;
     var jstack = []; // stack for JS objects
     var jvars = []; // JVALUE array
+    var js_input = []; // array of strings to share between FORTH and JS in server mode, used by REFILL
 
     this.global = {};
     if( !this.jsdict ) this.jsdict = {};
 
     // for SAVE
     this.global.img8 = img8;
+    this.global.js_input = js_input;
 
     this.global.get_string = get_string;
     this.global.push = function(v) {
@@ -1266,7 +1268,32 @@ function Forth(buffer, config) {
         var v = img[a >> 2];
         if( v >= jvars.length ) jvars.push(0);
         jvars[ v ] = jstack.pop();
-        ip += cellSize;    
+        ip += cellSize;
+    }
+
+    function js_read_line() {
+        // READ-LINE ( c-addr u1 fileid -- u2 flag ior ) \ 94 FILE
+        dp--; // drop id
+        var len = data_stack[dp--];
+        var addr = data_stack[dp--];
+
+        if( js_input.length ) {
+            var s = js_input[0];
+            if( s.length < len ) len = s.length;
+
+            for (var i = 0; i < len; i++) {
+              img8[addr] =  s.charCodeAt(i);
+            }
+            js_input.shift();
+            data_stack[++dp] = len;
+        } else
+            data_stack[++dp] = len;
+
+       data_stack[++dp] = -1;
+       data_stack[++dp] = 0;
+       ip += cellSize;
+
+       if( !js_input.length ) return true; // yeld till next input
     }
 
     function inner_loop() {
@@ -1662,6 +1689,13 @@ function Forth(buffer, config) {
                     break;
                 case 112:
                     tojs_val();
+                    break;
+                case 113:
+                    if( js_read_line() ) return;
+                    break;
+                case 114:
+                    data_stack[++dp] = config.server ? -1 : 0 ;
+                    ip += cellSize;
                     break;
                 default:
                     //report_error("unknown opcode " + word);

@@ -8,6 +8,12 @@ var http = require("http");
 var url = require("url");
 var path = require("path");
 var fs = require("fs");
+var io = require("socket.io")();
+
+var spf = require('./htdocs/forth.js');
+var words = require('./forthnode.js');
+
+
 //Port number to use
 var port = process.argv[2] || 8000;
 //Colors for CLI output
@@ -16,7 +22,7 @@ var RED = "\033[91m";
 var GRN = "\033[32m";
 
 //Create the server
-http.createServer(function (request, response) {
+var app = http.createServer(function (request, response) {
 
     //The requested URL like http://localhost:8000/file.html
     var uri = url.parse(request.url).pathname;
@@ -79,6 +85,33 @@ http.createServer(function (request, response) {
     });
 
 }).listen(parseInt(port, 10));
+
+function start_forth(uri) {
+        fs.readFile(path.join(__dirname, uri), function(err, data) {
+            if( err ) throw err;
+
+            var fs = new spf.Forth(data, {
+               data_space_size: 1000000,
+               server: true
+            });
+            console.log('FORTH image loaded');
+            fs.addWords(words.words);
+            fs.global.open_files = {};
+            fs.global.open_files_count = 0;
+            fs.start();
+       });
+}
+
+start_forth('./forth.img');
+
+io.listen(app);
+
+io.on('connection', function(socket) {
+    // Use socket to communicate with this particular client only, sending it it's own id
+    socket.emit('message', { message: 'Welcome!', id: socket.id });
+
+    socket.on('i am client', console.log);
+});
 
 //Message to display when server is started
 console.log(WHT + "Static file server running at\n  => http://localhost:" + port + "/\nCTRL + C to shutdown");

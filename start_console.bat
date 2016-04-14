@@ -1,1 +1,1 @@
-node forthnode.js %1
+node forthnode_cli.js %1
