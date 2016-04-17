@@ -86,6 +86,8 @@ var app = http.createServer(function (request, response) {
 
 }).listen(parseInt(port, 10));
 
+var forth_instance;
+
 function start_forth(uri) {
         fs.readFile(path.join(__dirname, uri), function(err, data) {
             if( err ) throw err;
@@ -99,18 +101,26 @@ function start_forth(uri) {
             fs.global.open_files = {};
             fs.global.open_files_count = 0;
             fs.start();
+            forth_instance =  fs;
+
+            io.listen(app);
        });
 }
 
 start_forth('./forth.img');
 
-io.listen(app);
 
 io.on('connection', function(socket) {
     // Use socket to communicate with this particular client only, sending it it's own id
-    socket.emit('message', { message: 'Welcome!', id: socket.id });
+    console.log('Connected client ' + socket.id);
+    socket.emit('welcome', { message: 'Welcome!', id: socket.id });
 
-    socket.on('i am client', console.log);
+    socket.on('spf', function(msg) { 
+        if( msg.code ) {
+            forth_instance.global.js_input.push(msg.code);
+            forth_instance.start(); // process messages
+        }
+    });
 });
 
 //Message to display when server is started

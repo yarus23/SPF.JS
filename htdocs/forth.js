@@ -1277,15 +1277,19 @@ function Forth(buffer, config) {
         var len = data_stack[dp--];
         var addr = data_stack[dp--];
 
+        var written;
+
         if( js_input.length ) {
             var s = js_input[0];
+            console.log('wrote ' + s);
             if( s.length < len ) len = s.length;
 
             for (var i = 0; i < len; i++) {
-              img8[addr] =  s.charCodeAt(i);
+              img8[addr+i] =  s.charCodeAt(i);
             }
             js_input.shift();
             data_stack[++dp] = len;
+            written = true;
         } else
             data_stack[++dp] = len;
 
@@ -1293,7 +1297,7 @@ function Forth(buffer, config) {
        data_stack[++dp] = 0;
        ip += cellSize;
 
-       if( !js_input.length ) return true; // yeld till next input
+       if( !written ) return true; // yeld till next input
     }
 
     function inner_loop() {
