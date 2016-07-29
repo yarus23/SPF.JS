@@ -23,7 +23,7 @@ Just run a http server (you can use simple node.js server via start_server.bat) 
 Or start local FORTH system with help of node.js
 
 For NODE.JS
-Start <b>node.exe forthnode.js</b> to get full working console FORTH system. You can even SAVE (addr u )  its state.
+Start <b>node.exe forthnode_cli.js</b> to get full working console FORTH system. You can even SAVE (addr u )  its state.
 
 Dmitry Yakimov aka (~day)
 write me at yarus23@gmail.com
