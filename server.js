@@ -100,6 +100,7 @@ function start_forth(uri) {
             fs.addWords(words.words);
             fs.global.open_files = {};
             fs.global.open_files_count = 0;
+            fs.to_eval_queue('S\" ./lib/server.f\" INCLUDED');
             fs.start();
             forth_instance =  fs;
 
@@ -116,9 +117,16 @@ io.on('connection', function(socket) {
     socket.emit('welcome', { message: 'Welcome!', id: socket.id });
 
     socket.on('spf', function(msg) { 
+        console.log(msg);
         if( msg.code ) {
-            forth_instance.global.js_input.push(msg.code);
+            forth_instance.to_eval_queue(msg.code);
+            forth_instance.global.jstack.push(msg);
             forth_instance.start(); // process messages
+
+            if( forth_instance.global.jstack.length )
+               msg = forth_instance.global.jstack.pop();
+            else msg = {};
+            socket.emit('return', msg);
         }
     });
 });

@@ -30,3 +30,38 @@ VARIABLE JVAR_COUNT
 : NULL 
     S" null"  JEVAL
 ;
+
+: []
+    S" []" JEVAL
+;
+
+: {}
+   S" {}" JEVAL
+;
+
+: TickStr ( str -- 'str' )
+    <# [CHAR] ' HOLD HOLDS [CHAR] ' HOLD 0 0 #>
+;
+
+: StrToJ ( addr u -- J: str )
+  TickStr JEVAL
+;
+
+: PARSE{ ( -- addr u )
+   [CHAR] { SYSTEM-PAD C!
+   1 >R
+   BEGIN
+      [CHAR] } DUP PARSE
+      2DUP SYSTEM-PAD R@ + SWAP DUP R> + >R CMOVE
+      + C@ = 0=
+   WHILE
+      REFILL 0= IF SYSTEM-PAD R> 2DUP + [CHAR] } SWAP C! 1+ EXIT THEN
+   REPEAT SYSTEM-PAD R> 2DUP + [CHAR] } SWAP C! 1+
+;
+
+: {
+  PARSE{
+  STATE @ IF POSTPONE SLITERAL [ C' JEVAL LIT, ] COMPILE,
+          ELSE JEVAL
+          THEN
+; IMMEDIATE

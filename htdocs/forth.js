@@ -41,6 +41,7 @@ function Forth(buffer, config) {
     // for SAVE
     this.global.img8 = img8;
     this.global.js_input = js_input;
+    this.global.jstack = jstack;
 
     this.global.get_string = get_string;
     this.global.push = function(v) {
@@ -76,6 +77,10 @@ function Forth(buffer, config) {
 
         data_stack[++dp] = here + cellSize;
         data_stack[++dp] = s.length;
+    }
+
+    this.to_eval_queue = function(s) {
+        this.global.js_input.push(s);
     }
 
     this.jswords = [];
@@ -1243,7 +1248,7 @@ function Forth(buffer, config) {
 
     function jseval() {
         var str = get_string();
-        var f = function(stack, str) { return eval(str); };
+        var f = function(stack, str) { return eval('('+str+')'); };
         jstack.push(f.call(this, jstack, str));
         ip += cellSize;
     }
@@ -1281,7 +1286,7 @@ function Forth(buffer, config) {
 
         if( js_input.length ) {
             var s = js_input[0];
-            console.log('wrote ' + s);
+            console.log('Put in interpret queue: ' + s);
             if( s.length < len ) len = s.length;
 
             for (var i = 0; i < len; i++) {
