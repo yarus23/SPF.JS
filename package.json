@@ -1,0 +1,31 @@
+{
+  "name": "spfjs",
+  "version": "1.0.0",
+  "description": "ANS FORTH 94 in javascript compatible with SP-FORTH",
+  "main": "node forthnode_cli.js",
+  "dependencies": {
+    "socket.io": "^1.4.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node forthnode_cli.js tests.f",
+    "start": "node server.js",
+    "console": "node forthnode_cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yarus23/SPF.JS.git"
+  },
+  "keywords": [
+    "FORTH",
+    "SP-FORTH",
+    "ANS",
+    "microprocessor"
+  ],
+  "author": "Dmitry Yakimov",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/yarus23/SPF.JS/issues"
+  },
+  "homepage": "https://github.com/yarus23/SPF.JS#readme"
+}
