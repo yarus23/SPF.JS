@@ -26,6 +26,11 @@ var app = http.createServer(function (request, response) {
 
     //The requested URL like http://localhost:8000/file.html
     var uri = url.parse(request.url).pathname;
+    if (path.normalize(decodeURI(uri)) !== decodeURI(uri)) {
+        response.statusCode = 403;
+        response.end();
+        return;
+    }
     //get the file.html from above and then find it from the current folder
     var filename = path.join(process.cwd(), "htdocs/" + uri);
 
